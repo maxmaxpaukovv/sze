@@ -188,7 +188,7 @@ const TransactionGroup: React.FC<TransactionGroupProps> = ({
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between cursor-pointer py-1.5 px-2 hover:bg-gray-50 rounded"
       >
-        <h4 className={`text-sm font-medium ${textColor} flex-grow`}>{type}</h4>
+        <h4 className={`text-sm ${textColor} flex-grow`}>{type}</h4>
         <div className="flex items-center gap-2">
           <span className={`text-sm font-semibold ${textColor}`}>({items.length})</span>
           <button className="text-gray-600">
@@ -216,8 +216,8 @@ const TransactionGroup: React.FC<TransactionGroupProps> = ({
   )
 }
 
-interface WorkGroupProps {
-  workGroup: string
+interface BaseItemGroupProps {
+  baseItemName: string
   items: ReceptionItem[]
   editingItems: Record<string, Partial<ReceptionItem>>
   onEdit: (itemId: string, field: keyof ReceptionItem, value: string | number) => void
@@ -225,8 +225,8 @@ interface WorkGroupProps {
   onDelete: (itemId: string) => void
 }
 
-const WorkGroup: React.FC<WorkGroupProps> = ({
-  workGroup,
+const BaseItemGroup: React.FC<BaseItemGroupProps> = ({
+  baseItemName,
   items,
   editingItems,
   onEdit,
@@ -239,12 +239,12 @@ const WorkGroup: React.FC<WorkGroupProps> = ({
   const expenseItems = items.filter((item) => item.transaction_type === 'Расходы')
 
   return (
-    <div className="border-l-4 border-blue-400 pl-4">
+    <div>
       <div
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between cursor-pointer py-2 px-2 hover:bg-blue-50 rounded"
       >
-        <h2 className="text-sm font-medium text-gray-800 flex-grow">{workGroup}</h2>
+        <h3 className="text-sm text-gray-800 flex-grow">{baseItemName}</h3>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600">({items.length})</span>
           <button className="text-gray-600">
@@ -271,6 +271,68 @@ const WorkGroup: React.FC<WorkGroupProps> = ({
             onSave={onSave}
             onDelete={onDelete}
           />
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface WorkGroupProps {
+  workGroup: string
+  items: ReceptionItem[]
+  editingItems: Record<string, Partial<ReceptionItem>>
+  onEdit: (itemId: string, field: keyof ReceptionItem, value: string | number) => void
+  onSave: (itemId: string) => void
+  onDelete: (itemId: string) => void
+}
+
+const WorkGroup: React.FC<WorkGroupProps> = ({
+  workGroup,
+  items,
+  editingItems,
+  onEdit,
+  onSave,
+  onDelete,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true)
+
+  const baseItemMap = new Map<string, ReceptionItem[]>()
+  for (const item of items) {
+    const baseName = item.item_description.split('_ID_')[0].trim()
+    if (!baseItemMap.has(baseName)) {
+      baseItemMap.set(baseName, [])
+    }
+    baseItemMap.get(baseName)!.push(item)
+  }
+
+  return (
+    <div className="border-l-4 border-blue-400 pl-4">
+      <div
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center justify-between cursor-pointer py-2 px-2 hover:bg-blue-50 rounded"
+      >
+        <h2 className="text-sm font-medium text-gray-800 flex-grow">{workGroup}</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">({items.length})</span>
+          <button className="text-gray-600">
+            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-2 space-y-2 pl-4">
+          {Array.from(baseItemMap.entries()).map(([baseName, baseItems]) => (
+            <BaseItemGroup
+              key={baseName}
+              baseItemName={baseName}
+              items={baseItems}
+              editingItems={editingItems}
+              onEdit={onEdit}
+              onSave={onSave}
+              onDelete={onDelete}
+            />
+          ))}
         </div>
       )}
     </div>
