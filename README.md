@@ -1,1 +1,1 @@
-# sze
+# NkortaQR
