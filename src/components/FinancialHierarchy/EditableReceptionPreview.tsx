@@ -64,52 +64,39 @@ const PositionItem: React.FC<PositionItemProps> = ({
 }) => {
   const isLinked = !!item.upd_document_id
   const displayValues = isEditing ? { ...item, ...editValues } : item
+  const total = displayValues.quantity * displayValues.price
 
   return (
     <div
-      className={`flex items-center gap-2 py-2 px-3 rounded transition-colors ${
+      className={`flex items-center gap-3 py-2 px-3 rounded transition-colors ${
         isLinked ? 'bg-gray-100 border border-gray-300' : 'hover:bg-gray-50 border border-transparent'
       }`}
     >
-      <div className="flex-grow grid grid-cols-12 gap-2 items-center">
-        <div className="col-span-4">
-          {!isLinked && isEditing ? (
-            <Input
-              value={displayValues.item_description}
-              onChange={(e) => onEdit(item.id, 'item_description', e.target.value)}
-              className="h-8 text-sm"
-            />
-          ) : (
-            <p className="text-sm text-gray-900">{displayValues.item_description}</p>
-          )}
-        </div>
-        <div className="col-span-2 text-sm text-gray-600">{displayValues.work_group}</div>
-        <div className="col-span-2 text-sm text-gray-600">{displayValues.transaction_type}</div>
-        <div className="col-span-1">
+      <div className="flex-1 min-w-0">
+        {!isLinked && isEditing ? (
+          <Input
+            value={displayValues.item_description}
+            onChange={(e) => onEdit(item.id, 'item_description', e.target.value)}
+            className="h-8 text-sm"
+          />
+        ) : (
+          <p className="text-sm text-gray-900">{displayValues.item_description}</p>
+        )}
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="text-right">
           {!isLinked && isEditing ? (
             <Input
               type="number"
               value={displayValues.quantity}
               onChange={(e) => onEdit(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-              className="h-8 text-sm"
+              className="h-8 text-sm w-20"
             />
           ) : (
             <p className="text-sm text-gray-900">{displayValues.quantity}</p>
           )}
         </div>
-        <div className="col-span-2">
-          {!isLinked && isEditing ? (
-            <Input
-              type="number"
-              value={displayValues.price}
-              onChange={(e) => onEdit(item.id, 'price', parseFloat(e.target.value) || 0)}
-              className="h-8 text-sm"
-            />
-          ) : (
-            <p className="text-sm text-gray-900">{displayValues.price}</p>
-          )}
-        </div>
-        <div className="col-span-1 flex gap-1 justify-end">
+        <div className="flex gap-1">
           {!isLinked && (
             <>
               {isEditing ? (
@@ -180,7 +167,10 @@ const TransactionGroup: React.FC<TransactionGroupProps> = ({
   if (items.length === 0) return null
 
   const isIncome = type === 'Доходы'
-  const textColor = isIncome ? 'text-green-800' : 'text-red-800'
+  const textColor = isIncome ? 'text-green-600' : 'text-red-600'
+  const bgColor = isIncome ? 'bg-green-50' : 'bg-red-50'
+
+  const total = items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
 
   return (
     <div>
@@ -188,11 +178,16 @@ const TransactionGroup: React.FC<TransactionGroupProps> = ({
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between cursor-pointer py-1.5 px-2 hover:bg-gray-50 rounded"
       >
-        <h4 className={`text-sm ${textColor} flex-grow`}>{type}</h4>
-        <div className="flex items-center gap-2">
-          <span className={`text-sm font-semibold ${textColor}`}>({items.length})</span>
+        <div className="flex items-center gap-2 flex-1">
+          <span className="text-sm text-gray-600">{isIncome ? '↗' : '↘'}</span>
+          <h4 className={`text-sm font-medium ${textColor}`}>{type}</h4>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`text-sm font-semibold ${textColor}`}>
+            {isIncome ? '+' : '-'} {total.toLocaleString('ru-RU')} ₽
+          </span>
           <button className="text-gray-600">
-            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
       </div>
@@ -238,23 +233,29 @@ const BaseItemGroup: React.FC<BaseItemGroupProps> = ({
   const incomeItems = items.filter((item) => item.transaction_type === 'Доходы')
   const expenseItems = items.filter((item) => item.transaction_type === 'Расходы')
 
+  const incomeTotal = incomeItems.reduce((sum, item) => sum + (item.quantity * item.price), 0)
+  const expenseTotal = expenseItems.reduce((sum, item) => sum + (item.quantity * item.price), 0)
+  const profit = incomeTotal - expenseTotal
+
   return (
-    <div>
+    <div className="bg-blue-50 rounded-lg px-3 py-2">
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between cursor-pointer py-2 px-2 hover:bg-blue-50 rounded"
+        className="flex items-center justify-between cursor-pointer"
       >
-        <h3 className="text-sm text-gray-800 flex-grow">{baseItemName}</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">({items.length})</span>
+        <h3 className="text-sm font-medium text-gray-800 flex-1">{baseItemName}</h3>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-green-600 font-medium">↗ {incomeTotal.toLocaleString('ru-RU')} ₽</span>
+          <span className="text-xs text-red-600 font-medium">↘ {expenseTotal.toLocaleString('ru-RU')} ₽</span>
+          <span className="text-xs text-blue-600 font-semibold">₽ {profit.toLocaleString('ru-RU')} ₽</span>
           <button className="text-gray-600">
-            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
       </div>
 
       {isExpanded && (
-        <div className="mt-2 space-y-2 pl-4">
+        <div className="mt-2 space-y-2 pl-3">
           <TransactionGroup
             type="Доходы"
             items={incomeItems}
@@ -305,23 +306,33 @@ const WorkGroup: React.FC<WorkGroupProps> = ({
     baseItemMap.get(baseName)!.push(item)
   }
 
+  const incomeTotal = items
+    .filter(item => item.transaction_type === 'Доходы')
+    .reduce((sum, item) => sum + (item.quantity * item.price), 0)
+  const expenseTotal = items
+    .filter(item => item.transaction_type === 'Расходы')
+    .reduce((sum, item) => sum + (item.quantity * item.price), 0)
+  const profit = incomeTotal - expenseTotal
+
   return (
-    <div className="border-l-4 border-blue-400 pl-4">
+    <div className="border-l-4 border-blue-400 pl-3">
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between cursor-pointer py-2 px-2 hover:bg-blue-50 rounded"
+        className="flex items-center justify-between cursor-pointer py-2 px-3 hover:bg-blue-50 rounded"
       >
-        <h2 className="text-sm font-medium text-gray-800 flex-grow">{workGroup}</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">({items.length})</span>
+        <h2 className="text-sm font-medium text-gray-800 flex-1">{workGroup}</h2>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-green-600 font-medium">↗ {incomeTotal.toLocaleString('ru-RU')} ₽</span>
+          <span className="text-xs text-red-600 font-medium">↘ {expenseTotal.toLocaleString('ru-RU')} ₽</span>
+          <span className="text-xs text-blue-600 font-semibold">₽ {profit.toLocaleString('ru-RU')} ₽</span>
           <button className="text-gray-600">
-            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
       </div>
 
       {isExpanded && (
-        <div className="mt-2 space-y-2 pl-4">
+        <div className="mt-2 space-y-2 pl-2">
           {Array.from(baseItemMap.entries()).map(([baseName, baseItems]) => (
             <BaseItemGroup
               key={baseName}
@@ -386,14 +397,22 @@ const MotorGroup: React.FC<MotorGroupProps> = ({
     setShowAddForm(false)
   }
 
+  const incomeTotal = motor.items
+    .filter(item => item.transaction_type === 'Доходы')
+    .reduce((sum, item) => sum + (item.quantity * item.price), 0)
+  const expenseTotal = motor.items
+    .filter(item => item.transaction_type === 'Расходы')
+    .reduce((sum, item) => sum + (item.quantity * item.price), 0)
+  const profit = incomeTotal - expenseTotal
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
       <div
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-t-lg cursor-pointer"
       >
-        <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded-full text-sm font-bold">
+        <div className="flex items-center gap-3 flex-1">
+          <span className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
             {motor.position_in_reception}
           </span>
           <div>
@@ -401,8 +420,10 @@ const MotorGroup: React.FC<MotorGroupProps> = ({
             <p className="text-xs text-gray-600">{motor.subdivisions.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">{motor.items.length} работ(ы)</span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-green-600 font-medium">\u2197 {incomeTotal.toLocaleString('ru-RU')} ₽</span>
+          <span className="text-sm text-red-600 font-medium">\u2198 {expenseTotal.toLocaleString('ru-RU')} ₽</span>
+          <span className="text-sm text-blue-600 font-semibold">₽ {profit.toLocaleString('ru-RU')} ₽</span>
           <button className="text-gray-600">
             {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           </button>
